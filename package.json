@@ -3,8 +3,11 @@
     "install:dep": "npm install concurrently --save-dev && cd fe-absensi && npm install && cd ../be-absensi && npm install",
     "build": "cd fe-absensi && npm run build && cd ../be-absensi && npm run build",
     "start": "npm run start:frontend && npm run start:backend",
-    "start:frontend": "cd fe-absensi && next start",
+    "start:frontend": "cd fe-absensi && npm run start",
     "start:backend": "cd be-absensi && npm run start",
     "db:reset": "cd be-absensi && npx prisma db push --force-reset && npx prisma generate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }
