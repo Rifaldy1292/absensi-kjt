@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" 
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+  createdAt DateTime @default(now())
+}
+
+model Employee {
+  id         Int       @id @default(autoincrement())
+  rfid_code  String   @unique
+  nik        String    @unique
+  name       String
+  position   String
+  department String
+  createdAt  DateTime  @default(now())
+
+  attendances Attendance[]
+  scan_logs   ScanLog[]
+}
+
+model Attendance {
+  id           Int       @id @default(autoincrement())
+  employee_id  Int
+  date         DateTime
+  time_in      DateTime?
+  time_out     DateTime?
+  total_hours  Float? 
+  createdAt    DateTime  @default(now())
+
+  employee     Employee  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  scan_logs    ScanLog[]
+}
+
+model ScanLog {
+  id            Int        @id @default(autoincrement())
+  employee_id   Int
+  attendance_id Int?       
+  timestamp     DateTime
+  scan_type     String
+  source        String
+
+  employee      Employee   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  attendance    Attendance? @relation(fields: [attendance_id], references: [id], onDelete: SetNull)
+}
