@@ -13,3 +13,23 @@ npm run build
 # 4. Jalankan frontend & backend secara bersamaan
 
 npm start
+
+# jalankan nssm di directory nssm
+
+## Kontrol Layanan absensi-jfe
+
+### Stop sementara
+
+nssm stop absensi-jfe
+
+### Stop total (hapus setting)
+
+nssm remove absensi-jfe confirm
+
+### Nonaktifkan startup otomatis
+
+sc config absensi-jfe start= disabled
+
+### Aktifkan lagi startup otomatis
+
+sc config absensi-jfe start= auto
