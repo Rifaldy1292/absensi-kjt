@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
-// import dayjs from 'dayjs';
-// import utc from 'dayjs/plugin/utc';
-// import timezone from 'dayjs/plugin/timezone';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-// dayjs.extend(utc);
-// dayjs.extend(timezone);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const JAKARTA = 'Asia/Jakarta';
+
 @Injectable()
 export class AttendanceService {
   constructor(private prisma: PrismaService) {}
@@ -20,16 +23,10 @@ export class AttendanceService {
       },
     });
   }
-
   async findDaily() {
-    const now = new Date(); // waktu saat ini, misalnya 14:30 WIB
-
-    const startOfDay = new Date(now); // clone, jadi ini salinan
-    startOfDay.setHours(0, 0, 0, 0); // jadi: 00:00:00
-
-    const endOfDay = new Date(now); // clone lagi
-    endOfDay.setHours(23, 59, 59, 999); // jadi: 23:59:59
-    999;
+    const now = dayjs().tz(JAKARTA);
+    const startOfDay = now.startOf('day').toDate();
+    const endOfDay = now.endOf('day').toDate();
 
     return this.prisma.attendance.findMany({
       where: {
@@ -45,15 +42,10 @@ export class AttendanceService {
       },
     });
   }
-
   async findWeekly() {
-    const now = new Date();
-    const first = now.getDate() - now.getDay();
-    const startOfWeek = new Date(now.setDate(first));
-    startOfWeek.setHours(0, 0, 0, 0);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+    const now = dayjs().tz(JAKARTA);
+    const startOfWeek = now.startOf('week').toDate(); // mulai dari Minggu
+    const endOfWeek = now.endOf('week').toDate(); // Sabtu malam
 
     return this.prisma.attendance.findMany({
       where: {
@@ -69,19 +61,10 @@ export class AttendanceService {
       },
     });
   }
-
   async findMonthly() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
+    const now = dayjs().tz(JAKARTA);
+    const startOfMonth = now.startOf('month').toDate();
+    const endOfMonth = now.endOf('month').toDate();
 
     return this.prisma.attendance.findMany({
       where: {
@@ -105,11 +88,19 @@ export class AttendanceService {
   }
   async logAttendance(createAttendanceDto: CreateAttendanceDto) {
     const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
+    // BIARKAN tetap asli
 
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = dayjs(now)
+      .tz('Asia/Jakarta')
+      .startOf('day')
+      .tz('UTC', true)
+      .toDate();
+
+    const endOfDay = dayjs(now)
+      .tz('Asia/Jakarta')
+      .endOf('day')
+      .tz('UTC', true)
+      .toDate();
 
     const { employee_id, status } = createAttendanceDto;
 
