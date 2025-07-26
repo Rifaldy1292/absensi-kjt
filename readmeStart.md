@@ -14,11 +14,20 @@ npm run build
 
 # 4. Jalankan frontend & backend secara bersamaan
 
+# untuk test dev / untuk running di production run dengan nssm
+
 npm start
 
 # jalankan nssm di directory nssm
 
 ## Kontrol Layanan absensi-jfe
+
+-nssm install absensi-jfe
+-isi path npm / cari dengan where npm
+-argumen "run start"
+-start up directori beri "" jika ada spasi ,C:\rifky data penting\project-pak-rahmat-bekasi\absensi-jfe
+
+- jalankan untuk start pertama nssm start absensi-jfe
 
 ### Stop sementara
 
