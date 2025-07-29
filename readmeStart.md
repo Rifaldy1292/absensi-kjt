@@ -1,3 +1,5 @@
+## pastikan env di frontEnd dan BackEnd sudah sesuai ,dan untuk port pastikan sama dengan yang awal
+
 # 1. Install semua dependency (root, frontend, backend)
 
 npm run install:dep

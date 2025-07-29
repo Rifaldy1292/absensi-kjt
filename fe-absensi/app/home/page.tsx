@@ -45,22 +45,21 @@ export default function DashboardPage() {
       console.log("Data karyawan:", res);
       if (res) {
         setUsers((prev) => {
-          const alreadyExists = prev.some(
-            (user) => user.rfid_code === res.rfid_code
-          );
-          if (alreadyExists) return prev;
-          return [...prev, res];
+          // Cegah penambahan kalau sudah ada satu orang
+          if (prev.length > 0) return prev;
+
+          return [res]; // Tambah hanya jika kosong
         });
         setMode("showing");
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
         }
 
-        // ⏳ Set timer 5 detik untuk reset state
+        // ⏳ Set timer untuk reset state
         timeoutRef.current = setTimeout(() => {
           setUsers([]);
           setMode("waiting");
-        }, 5000);
+        }, 10000);
       }
     } catch (error) {
       console.error("Gagal ambil data karyawan:", error);
@@ -120,7 +119,6 @@ export default function DashboardPage() {
         </Card>
       ) : (
         <Card className="p-6 w-full max-w-2xl text-center space-y-4">
-          {/* 🔴 AlertDialog Absen Pulang */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button className="bg-red-500 text-white">Absen Pulang</Button>
@@ -141,11 +139,9 @@ export default function DashboardPage() {
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* 🧍 List User */}
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-1 ">
             {users.map((user, idx) => (
               <div key={idx} className="space-y-2 relative border p-2 rounded">
-                {/* Tombol silang pojok kanan atas */}
                 <button
                   onClick={() =>
                     setUsers((prev) =>

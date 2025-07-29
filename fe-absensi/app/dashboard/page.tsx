@@ -27,7 +27,7 @@ import {
   getMonthlyAttendance,
 } from "@/lib/api/attendance";
 import { formatToJakartaTime, formatToJakartaDate } from "@/utils/formatTimes";
-
+import socket from "@/lib/socket";
 type Employee = {
   id: number;
   rfid_code: string;
@@ -62,6 +62,35 @@ export default function AbsensiPage() {
     "harian"
   );
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  useEffect(() => {
+    // === Listener koneksi ===
+    const handleConnect = () => {
+      console.log("connected");
+      setIsConnected(true);
+    };
+    const handleDisconnect = () => {
+      console.log("disconnected");
+      setIsConnected(false);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    // === Listener event log_update dari backend ===
+    const onLogUpdate = async () => {
+      console.log("log_update");
+      await handleGetAttendance(filter); // Pastikan filter disimpan atau pakai useRef
+    };
+    socket.on("updateLogNotification", onLogUpdate);
+    socket.connect();
+    return () => {
+      socket.off("updateLogNotification", onLogUpdate);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.disconnect(); // optional kalau socket hanya untuk page ini
+    };
+  }, []);
   const getAttendanceByFilter = async (
     filter: "harian" | "mingguan" | "bulanan"
   ) => {
@@ -89,7 +118,7 @@ export default function AbsensiPage() {
   };
 
   useEffect(() => {
-    handleGetAttendance(filter); // panggil ulang saat filter berubah
+    handleGetAttendance(filter);
   }, [filter]);
 
   return (
@@ -97,6 +126,17 @@ export default function AbsensiPage() {
       <div className="flex px-6 ">
         <div className="flex flex-wrap mt-5 gap-5 items-center justify-between w-full  mb-4">
           <h1 className="text-2xl font-bold">Data Absensi</h1>
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-3 h-3 rounded-full ${
+                isConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+            />
+
+            <span className="text-sm">
+              {isConnected ? "Online" : "Offline"}
+            </span>
+          </div>
 
           <div className="flex items-center gap-2 ">
             <Button onClick={() => exportToExcel(attendance)}>
@@ -133,7 +173,8 @@ export default function AbsensiPage() {
                 <TableHead>Jam out</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Jam kerja</TableHead>
-                <TableHead>History in out</TableHead>
+                <TableHead>History in</TableHead>
+                <TableHead>History out</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -157,18 +198,39 @@ export default function AbsensiPage() {
                     <TableCell>{item.total_hours} Jam</TableCell>
                     <TableCell>
                       <ul className="list-disc pl-4 space-y-1">
-                        {item?.scan_logs?.map((log, i) => (
-                          <li
-                            key={i}
-                            className="flex items-center justify-between gap-2"
-                          >
-                            <span>
-                              {log.timestamp
-                                ? formatToJakartaTime(log.timestamp)
-                                : "-"}
-                            </span>
-                          </li>
-                        ))}
+                        {item?.scan_logs
+                          ?.filter((log) => log.scan_type === "in")
+                          .map((log, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <span>
+                                {log.timestamp
+                                  ? formatToJakartaTime(log.timestamp)
+                                  : "-"}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </TableCell>
+
+                    <TableCell>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {item?.scan_logs
+                          ?.filter((log) => log.scan_type === "out")
+                          .map((log, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <span>
+                                {log.timestamp
+                                  ? formatToJakartaTime(log.timestamp)
+                                  : "-"}
+                              </span>
+                            </li>
+                          ))}
                       </ul>
                     </TableCell>
                   </TableRow>

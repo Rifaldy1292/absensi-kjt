@@ -4,6 +4,7 @@ import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { WsGateway } from '../ws/ws.gateway';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -12,7 +13,10 @@ const JAKARTA = 'Asia/Jakarta';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly wsGateway: WsGateway,
+  ) {}
 
   async findAll() {
     return this.prisma.attendance.findMany({
@@ -138,12 +142,14 @@ export class AttendanceService {
         source: 'manual',
       },
     });
+    this.wsGateway.sendUpdateLogNotification('refresh');
     // 3. Kalau statusnya "in", update time_in kalau belum ada
     if (status === 'in' && !attendance.time_in) {
       await this.prisma.attendance.update({
         where: { id: attendance.id },
         data: { time_in: now },
       });
+
       return { message: 'Scan masuk dicatat' };
     }
 
@@ -176,6 +182,7 @@ export class AttendanceService {
             // time_in: null,
           },
         });
+
         return {
           message: `Scan keluar dicatat, total jam sekarang ${newTotalHours}`,
         };

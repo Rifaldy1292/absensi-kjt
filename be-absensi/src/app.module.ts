@@ -9,7 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 
-// import { WsModule } from './ws/ws.module';
+import { WsModule } from './ws/ws.module';
 @Module({
   imports: [
     PrismaModule,
@@ -22,7 +22,7 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true, // biar bisa dipakai di mana saja tanpa impor ulang
     }),
 
-    // WsModule,
+    WsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
