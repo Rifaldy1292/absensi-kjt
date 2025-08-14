@@ -1,8 +1,14 @@
 {
+  "dependencies": {
+    "@nestjs/mapped-types": "*"
+  },
   "scripts": {
     "install:dep": "npm install concurrently --save-dev && cd fe-absensi && npm install && cd ../be-absensi && npm install",
     "build": "cd fe-absensi && npm run build && cd ../be-absensi && npm run build",
     "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:dev": "concurrently \"npm run start:frontend:dev\" \"npm run start:backend:dev\"",
+    "start:frontend:dev": "cd fe-absensi && npm run dev",
+    "start:backend:dev": "cd be-absensi && npm run start:dev",
     "start:frontend": "cd fe-absensi && npm run start",
     "start:backend": "cd be-absensi && npm run start",
     "db:reset": "cd be-absensi && npx prisma db push --force-reset && npx prisma generate"

@@ -4,20 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createAttendance } from "@/lib/api/attendance";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import HiddenRFIDInput from "@/components/InputRfidHidden";
+import { formatToJakartaTime, formatToJakartaDate } from "@/utils/formatTimes";
+import socket from "@/lib/socket";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { getEmployeeById } from "@/lib/api/employees";
+
 type AbsensiData = {
   id: number;
   name: string;
@@ -27,193 +19,194 @@ type AbsensiData = {
   rfid_code: number;
   createdAt: string;
 };
-
+type AbcentPerson = {
+  employee_name: string;
+  status: string;
+  time: Date;
+};
 export default function DashboardPage() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mode, setMode] = useState<"waiting" | "showing">("waiting");
-  const [users, setUsers] = useState<AbsensiData[]>([]);
-  const beepSound = useRef<HTMLAudioElement | null>(null);
-
+  const masukSound = "/sound-masuk.wav";
+  const keluarSound = "/sound-keluar.wav";
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const masukRef = useRef<HTMLAudioElement | null>(null);
+  const keluarRef = useRef<HTMLAudioElement | null>(null);
+  const soundEnabledRef = useRef(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [abcentPerson, setAbcentPerson] = useState<AbcentPerson>({
+    employee_name: "",
+    status: "",
+    time: new Date(),
+  });
   useEffect(() => {
-    beepSound.current = new Audio("/beep-329314.mp3");
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+  useEffect(() => {
+    const handleConnect = () => {
+      console.log("connected");
+      setIsConnected(true);
+    };
+    const handleDisconnect = () => {
+      console.log("disconnected");
+      setIsConnected(false);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    const onLogUpdate = (data: AbcentPerson) => {
+      console.log(data);
+      if (soundEnabledRef.current) {
+        if (data.status === "in") playSafe(masukSound);
+        else if (data.status === "out") playSafe(keluarSound);
+      }
+
+      setMode("showing");
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        setAbcentPerson({
+          employee_name: "",
+          status: "",
+          time: new Date(0),
+        });
+
+        setMode("waiting");
+      }, 5000);
+      setAbcentPerson(data);
+    };
+    socket.on("updateLogNotification", onLogUpdate);
+    socket.connect();
+    return () => {
+      socket.off("updateLogNotification", onLogUpdate);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.disconnect();
+    };
   }, []);
 
-  const handleScan = async (rfid: string) => {
-    console.log("Tag dari _app:", rfid);
-    try {
-      const res = await getEmployeeById(rfid);
-      console.log("Data karyawan:", res);
-      if (res) {
-        setUsers((prev) => {
-          // Cegah penambahan kalau sudah ada satu orang
-          if (prev.length > 0) return prev;
-
-          return [res]; // Tambah hanya jika kosong
-        });
-        setMode("showing");
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
+  useEffect(() => {
+    masukRef.current = new Audio(masukSound);
+    keluarRef.current = new Audio(keluarSound);
+    masukRef.current.preload = "auto";
+    keluarRef.current.preload = "auto";
+    masukRef.current.volume = 1;
+    keluarRef.current.volume = 1;
+    if (localStorage.getItem("soundEnabled") === "1") {
+      console.log("sound enabled");
+      (async () => {
+        try {
+          masukRef.current!.muted = true;
+          await masukRef.current!.play();
+          masukRef.current!.pause();
+          masukRef.current!.currentTime = 0;
+          masukRef.current!.muted = false;
+          setSoundEnabled(true);
+          console.log("sound enabled2");
+        } catch (error) {
+          setSoundEnabled(false);
+          console.log("gagal sound enabled2", error);
         }
-
-        // ⏳ Set timer untuk reset state
-        timeoutRef.current = setTimeout(() => {
-          setUsers([]);
-          setMode("waiting");
-        }, 10000);
-      }
+      })();
+    }
+  }, []);
+  const playSafe = async (src: string) => {
+    try {
+      const audio = new Audio(src);
+      audio.volume = 1;
+      await audio.play();
+      console.log("✅ Played:", src);
     } catch (error) {
-      console.error("Gagal ambil data karyawan:", error);
+      console.error("❌ play failed:", src, error);
     }
-  };
-
-  const handleBulkAttendance = async (status: "in" | "out") => {
-    for (const user of users) {
-      try {
-        await createAttendance({
-          employee_id: user.id,
-          status,
-        });
-
-        console.log(`Absensi sukses untuk ${user.name}`);
-
-        toast.success(
-          <div>
-            <p className="font-semibold">Absensi sukses</p>
-            <p className="text-sm text-muted-foreground">
-              Berhasil absen untuk {user.name}
-            </p>
-          </div>
-        );
-      } catch (error) {
-        console.error(`Gagal absen ${user.name}`, error);
-
-        toast.error(
-          <div>
-            <p className="font-semibold">Gagal absen</p>
-            <p className="text-sm text-muted-foreground">
-              Terjadi kesalahan saat absen {user.name}
-            </p>
-          </div>
-        );
-      }
-    }
-
-    // Setelah selesai semua
-    setUsers([]);
-    setMode("waiting");
   };
   return (
-    <div className="flex p-3 items-center w-full justify-center min-h-screen bg-muted/50 relative">
-      <HiddenRFIDInput onScan={handleScan} />
-      {mode === "waiting" ? (
-        <Card className="p-10 mx-auto text-center h-[500px] animate-pulse">
-          <CardHeader>
-            <CardTitle className="text-xl">Menunggu Tap Kartu...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Silakan tap kartu di alat untuk absensi
-            </p>
-            <div className="mt-6 text-4xl">📡</div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="p-6 w-full max-w-2xl text-center space-y-4">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button className="bg-red-500 text-white">Absen Pulang</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Konfirmasi Absen Pulang</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Yakin ingin absen pulang? Data akan langsung dikirim.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleBulkAttendance("out")}>
-                  Ya, Absen Pulang
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+    <div>
+      <div
+        className="flex
+      justify-end p-5"
+      >
+        <div className="flex items-center space-x-2 gap-5">
+          Off{" "}
+          <Switch
+            id="enable-sound"
+            checked={soundEnabled}
+            onCheckedChange={async (val) => {
+              if (val) {
+                try {
+                  await masukRef.current?.play();
+                  masukRef.current?.pause();
+                  if (masukRef.current) masukRef.current.currentTime = 0;
 
-          <CardContent className="grid grid-cols-1 sm:grid-cols-1 ">
-            {users.map((user, idx) => (
-              <div key={idx} className="space-y-2 relative border p-2 rounded">
-                <button
-                  onClick={() =>
-                    setUsers((prev) =>
-                      prev.filter((u) => u.rfid_code !== user.rfid_code)
-                    )
-                  }
-                  className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm"
-                >
-                  ❌
-                </button>
+                  await keluarRef.current?.play();
+                  keluarRef.current?.pause();
+                  if (keluarRef.current) keluarRef.current.currentTime = 0;
 
+                  localStorage.setItem("soundEnabled", "1");
+                  setSoundEnabled(true);
+                } catch (e) {
+                  console.error("Enable sound failed:", e);
+                  setSoundEnabled(false);
+                }
+              } else {
+                localStorage.removeItem("soundEnabled");
+                setSoundEnabled(false);
+              }
+            }}
+          />
+          On
+          <Label htmlFor="enable-sound">Aktifkan Suara</Label>
+        </div>
+      </div>
+      <div className="flex p-3 items-center w-full justify-center min-h-screen bg-muted/50 relative">
+        {mode === "waiting" ? (
+          <Card className="p-10 mx-auto text-center h-[500px] animate-pulse">
+            <CardHeader>
+              <CardTitle className="text-xl">Menunggu Tap Kartu...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Silakan tap kartu di alat untuk absensi
+              </p>
+              <div className="mt-6 text-4xl">📡</div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="p-6 w-full max-w-2xl text-center space-y-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-1 ">
+              <div className="space-y-2 relative border p-2 rounded">
                 <Avatar className="w-16 h-16 mx-auto">
-                  <AvatarImage alt={user.name} />
-                  <AvatarFallback>{user.nik.charAt(0)}</AvatarFallback>
+                  <AvatarImage
+                    alt={abcentPerson.employee_name}
+                    src="/logo-khalil.png"
+                  />
                 </Avatar>
 
-                <p className="text-sm font-semibold">{user.name}</p>
-
+                <p className="text-sm font-semibold">
+                  {abcentPerson.employee_name}
+                </p>
                 <p className="text-sm font-semibold">
                   {new Date().toLocaleString()}
                 </p>
-
                 <p className="text-xs text-muted-foreground"></p>
-
-                <StatusBadge status={user.rfid_code} />
+                <StatusBadge status={abcentPerson.status} />
               </div>
-            ))}
-          </CardContent>
-
-          {/* 🟢 AlertDialog Absen Masuk */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button className="bg-green-500 text-white">Absen Masuk</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Konfirmasi Absen Masuk</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Yakin ingin absen masuk? Data akan langsung dikirim.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleBulkAttendance("in")}>
-                  Ya, Absen Masuk
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </Card>
-      )}
-      {/* Tombol Tes Manual
-      <div className="fixed bottom-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={() => simulateTyping("123456789")}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
-        >
-          Tes Scan Manual
-        </button>
-
-        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow">
-          Tes Scan 4 Orang
-        </button>
-      </div> */}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: number }) {
+function StatusBadge({ status }: { status: string }) {
+  const color = status === "in" ? "bg-green-400" : "bg-red-400";
   return (
     <span
-      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs bg-green-400 break-words max-w-[100px]`}
+      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs ${color} break-words max-w-[100px]`}
     >
       {status}
     </span>

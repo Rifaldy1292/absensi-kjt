@@ -27,8 +27,8 @@ export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   sendRfidData(data: any) {
     this.server.emit('rfidDetected', data);
   }
-  sendUpdateLogNotification(data: string) {
-    console.log('Notifikasi update log ditampilkan');
+  sendUpdateLogNotification(data: object) {
+    console.log('Notifikasi update log ditampilkan', data);
     return this.server.emit('updateLogNotification', data);
   }
 }

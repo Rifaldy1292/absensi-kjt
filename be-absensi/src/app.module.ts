@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 
 import { WsModule } from './ws/ws.module';
+import { NodeRedModule } from './node-red/node-red.module';
 @Module({
   imports: [
     PrismaModule,
@@ -23,6 +24,8 @@ import { WsModule } from './ws/ws.module';
     }),
 
     WsModule,
+
+    NodeRedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

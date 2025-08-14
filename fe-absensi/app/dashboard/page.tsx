@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { getAllAttendance } from "@/lib/api/attendance";
 import { exportToExcel } from "@/utils/exportToExcel";
@@ -125,7 +126,17 @@ export default function AbsensiPage() {
     <>
       <div className="flex px-6 ">
         <div className="flex flex-wrap mt-5 gap-5 items-center justify-between w-full  mb-4">
-          <h1 className="text-2xl font-bold">Data Absensi</h1>
+          <div className="flex items-center">
+            <Image
+              src="/logo-khalil.png"
+              alt="Logo Khalil"
+              width={100}
+              height={100}
+              className="w-16 h-16 rounded-full"
+            />
+            <h1 className="text-2xl font-bold">Data Absensi</h1>
+          </div>
+
           <div className="flex items-center gap-2">
             <span
               className={`w-3 h-3 rounded-full ${

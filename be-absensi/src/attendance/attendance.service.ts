@@ -92,7 +92,6 @@ export class AttendanceService {
   }
   async logAttendance(createAttendanceDto: CreateAttendanceDto) {
     const now = new Date();
-    // BIARKAN tetap asli
 
     const startOfDay = dayjs(now)
       .tz('Asia/Jakarta')
@@ -108,9 +107,6 @@ export class AttendanceService {
 
     const { employee_id, status } = createAttendanceDto;
 
-    // 1. Simpan ke ScanLog dulu
-
-    // 2. Cek absensi hari ini
     let attendance = await this.prisma.attendance.findFirst({
       where: {
         employee_id,
@@ -142,7 +138,7 @@ export class AttendanceService {
         source: 'manual',
       },
     });
-    this.wsGateway.sendUpdateLogNotification('refresh');
+    this.wsGateway.sendUpdateLogNotification({ refresh: true });
     // 3. Kalau statusnya "in", update time_in kalau belum ada
     if (status === 'in' && !attendance.time_in) {
       await this.prisma.attendance.update({
