@@ -31,12 +31,12 @@ export class NodeRedService {
     const startOfDay = dayjs(now)
       .tz('Asia/Jakarta')
       .startOf('day')
-      .tz('UTC', true)
+      .tz('UTC')
       .toDate();
     const endOfDay = dayjs(now)
       .tz('Asia/Jakarta')
       .endOf('day')
-      .tz('UTC', true)
+      .tz('UTC')
       .toDate();
 
     let attendance = await this.prisma.attendance.findFirst({
