@@ -96,13 +96,13 @@ export class AttendanceService {
     const startOfDay = dayjs(now)
       .tz('Asia/Jakarta')
       .startOf('day')
-      .tz('UTC', true)
+      .tz('UTC')
       .toDate();
 
     const endOfDay = dayjs(now)
       .tz('Asia/Jakarta')
       .endOf('day')
-      .tz('UTC', true)
+      .tz('UTC')
       .toDate();
 
     const { employee_id, status } = createAttendanceDto;
