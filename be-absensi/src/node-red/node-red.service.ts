@@ -59,7 +59,7 @@ export class NodeRedService {
       });
     }
 
-    const lastScan = await this.prisma.scanLog.findFirst({
+    const lastScan = await this.prisma.scan_logs.findFirst({
       where: {
         employee_id: employee.id,
         timestamp: {
@@ -73,7 +73,7 @@ export class NodeRedService {
     if (lastScan) {
       status = lastScan.scan_type === 'in' ? 'out' : 'in';
     }
-    await this.prisma.scanLog.create({
+    await this.prisma.scan_logs.create({
       data: {
         employee_id: employee.id,
         attendance_id: attendance.id,
@@ -90,7 +90,7 @@ export class NodeRedService {
       return { message: 'Scan masuk dicatat' };
     }
     if (status === 'out' && attendance.time_in) {
-      const lastScanIn = await this.prisma.scanLog.findFirst({
+      const lastScanIn = await this.prisma.scan_logs.findFirst({
         where: {
           employee_id: employee.id,
           attendance_id: attendance.id,

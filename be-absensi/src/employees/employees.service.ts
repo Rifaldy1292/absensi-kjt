@@ -8,30 +8,30 @@ export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
   create(dto: CreateEmployeeDto) {
-    return this.prisma.employee.create({ data: dto });
+    return this.prisma.employees.create({ data: dto });
   }
 
   findAll() {
-    return this.prisma.employee.findMany({
-      orderBy: { createdAt: 'desc' },
+    return this.prisma.employees.findMany({
+      orderBy: { created_at: 'desc' },
     });
   }
 
   findOne(rfid_code: string) {
-    return this.prisma.employee.findUnique({
+    return this.prisma.employees.findUnique({
       where: { rfid_code },
     });
   }
 
   update(id: number, dto: UpdateEmployeeDto) {
-    return this.prisma.employee.update({
+    return this.prisma.employees.update({
       where: { id },
       data: dto,
     });
   }
 
   remove(id: number) {
-    return this.prisma.employee.delete({
+    return this.prisma.employees.delete({
       where: { id },
     });
   }

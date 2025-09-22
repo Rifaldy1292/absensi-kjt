@@ -27,7 +27,9 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
     name: "",
     position: "",
     department: "",
+    salary: "",
   });
+
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -44,6 +46,7 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
         name: form.name,
         position: form.position,
         department: form.department,
+        salary: Number(form.salary),
       };
 
       await createEmployee(payload);
@@ -56,6 +59,7 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
         name: "",
         position: "",
         department: "",
+        salary: "",
       });
     } catch (err: any) {
       toast.error(err.message || "Terjadi kesalahan saat menambahkan");
@@ -81,12 +85,14 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
             { label: "Nama Lengkap", name: "name" },
             { label: "Jabatan", name: "position" },
             { label: "Departemen", name: "department" },
+            { label: "Gaji (Rp)", name: "salary", type: "number" }, // ✅ tambah ini
           ].map((field, index) => (
             <div key={field.name} className="grid gap-2">
               <Label htmlFor={field.name}>{field.label}</Label>
               <Input
                 id={field.name}
                 name={field.name}
+                type={field.type || "text"} // default "text"
                 value={(form as any)[field.name]}
                 onChange={handleChange}
                 ref={(el) => {

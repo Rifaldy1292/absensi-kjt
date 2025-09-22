@@ -8,6 +8,7 @@ export interface CreateEmployeePayload {
   name: string;
   position: string;
   department: string;
+  salary: number;
 }
 export interface UpdateEmployeePayload {
   rfid_code?: string;

@@ -20,7 +20,7 @@ export class AttendanceService {
 
   async findAll() {
     return this.prisma.attendance.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       include: {
         employee: true,
         scan_logs: true,
@@ -39,7 +39,7 @@ export class AttendanceService {
           lte: endOfDay,
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       include: {
         employee: true,
         scan_logs: true,
@@ -58,7 +58,7 @@ export class AttendanceService {
           lte: endOfWeek,
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       include: {
         employee: true,
         scan_logs: true,
@@ -77,7 +77,7 @@ export class AttendanceService {
           lte: endOfMonth,
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       include: {
         employee: true,
         scan_logs: true,
@@ -129,7 +129,7 @@ export class AttendanceService {
       });
     }
     console.log('SCAN TYPE:', status);
-    await this.prisma.scanLog.create({
+    await this.prisma.scan_logs.create({
       data: {
         employee_id,
         attendance_id: attendance.id,
@@ -151,7 +151,7 @@ export class AttendanceService {
 
     // 4. Kalau statusnya "out", hitung durasi dan tambahkan
     if (status === 'out' && attendance.time_in) {
-      const lastScanIn = await this.prisma.scanLog.findFirst({
+      const lastScanIn = await this.prisma.scan_logs.findFirst({
         where: {
           employee_id,
           attendance_id: attendance.id,
